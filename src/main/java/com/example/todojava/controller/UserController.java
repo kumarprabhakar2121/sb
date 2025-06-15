@@ -3,6 +3,7 @@ package com.example.todojava.controller;
 
 import com.example.todojava.model.User;
 import com.example.todojava.service.UserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +32,9 @@ public class UserController {
 
 
     @PostMapping
-    public User save(@RequestBody User user) {
-        return  service.create(user);
+    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
+        User savedUser = service.create(user);
+        return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
     }
+
 }
