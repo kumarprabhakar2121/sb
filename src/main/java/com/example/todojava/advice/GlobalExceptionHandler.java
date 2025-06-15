@@ -1,5 +1,6 @@
 package com.example.todojava.advice;
 
+import com.example.todojava.exception.UserNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,16 +22,35 @@ public class GlobalExceptionHandler {
     ) {
         Map<String, String> fieldErrors = new HashMap<>();
         ex.getBindingResult().getFieldErrors().forEach(error ->
-            fieldErrors.put(error.getField(), error.getDefaultMessage())
+                fieldErrors.put(error.getField(), error.getDefaultMessage())
         );
 
-        Map<String, Object> responseBody = new HashMap<>();
-        responseBody.put("timestamp", Instant.now().toString());
-        responseBody.put("status", HttpStatus.BAD_REQUEST.value());
-        responseBody.put("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
-        responseBody.put("message", fieldErrors);
-        responseBody.put("path", request.getRequestURI());
+        return buildResponse(HttpStatus.BAD_REQUEST, fieldErrors, request.getRequestURI());
+    }
 
-        return new ResponseEntity<>(responseBody, HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleUserNotFound(
+            UserNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleGenericException(
+            Exception ex,
+            HttpServletRequest request
+    ) {
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), request.getRequestURI());
+    }
+
+    private ResponseEntity<Map<String, Object>> buildResponse(HttpStatus status, Object message, String path) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", Instant.now().toString());
+        body.put("status", status.value());
+        body.put("error", status.getReasonPhrase());
+        body.put("message", message);
+        body.put("path", path);
+        return new ResponseEntity<>(body, status);
     }
 }
